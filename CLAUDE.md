@@ -17,7 +17,30 @@ update this line when it is.
   kept so it can be edited and diffed without extracting it from the patch.
 - `scripts/apply.sh [QuestieDir] [-R]` — dry-runs then applies (or reverts with `-R`) to the live install
   at `/Applications/World of Warcraft/_forever_/Interface/AddOns/Questie` by default.
+- `QuestieGamepad/` — the same feature as a standalone addon (see below). `make install` symlinks it into the AddOns folder (`make uninstall`, `make check`).
 - `scripts/make-patch.sh <pristine> <patched>` — rebuilds the patch and the `files/` copy from two Questie folders.
+
+## Standalone addon (`QuestieGamepad/`)
+
+The same logic as a separate addon (`QuestieGamepad.toc`, Interface 16001, `## Dependencies: Questie`, plus
+`QuestieGamepad.lua`), symlinked into the AddOns folder with `make install` (override `WOW_ADDONS=` for another location). Not yet confirmed in game.
+It is `files/Modules/Tracker/TrackerGamepad.lua` with these differences; keep the two in step when changing either:
+
+- No Questie file is edited. It reaches Questie through the global `QuestieLoader:ImportModule(...)` and never
+  calls `CreateModule`.
+- No `Initialize(baseFrame)` call from `QuestieTracker.Initialize`: frames, events and hooks are set up at file
+  load (Questie's files have already run, so `TrackerLinePool.RefreshHighlight` exists to hook), and the tracker
+  frame is read lazily as the global `Questie_BaseFrame` (named in `TrackerBaseFrame.lua`). Everything that
+  touches the tracker first checks `QuestieTracker.started`, so a tracker enabled later just works.
+- Its own strings are plain English; a local `l10n()` wrapper only asks Questie for keys present in
+  `l10n.translations` (unknown keys log an error per call under Questie's debug mode).
+- Frames are named `QuestieGamepad_*` instead of `Questie_TrackerGamepad*`.
+- It returns at the top if `QuestieLoader._modules["TrackerGamepad"].Initialize` exists, i.e. Questie still
+  carries the patch, so the two never double-hook. That check must stay before the first `ImportModule`.
+- Taint is attributed to `QuestieGamepad` rather than `Questie` in `taint.log`; the taint rule below is unchanged.
+
+For a new Questie release there is nothing to re-apply; just re-run the API greps in "Updating the patch" step 3
+(plus `grep -n Questie_BaseFrame Modules/Tracker/TrackerBaseFrame.lua`).
 
 ## What the patch changes (5 files)
 

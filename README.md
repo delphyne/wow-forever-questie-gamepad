@@ -8,13 +8,28 @@ installed it did nothing. The patch adds a `TrackerGamepad` module that takes ov
 buttons while the Questie tracker is focused, without handing Questie's frames to Blizzard's
 SmartNavigation (which would taint the gamepad UI and trigger blocked-action popups).
 
-## Apply
+## Install (standalone addon, preferred)
+
+`QuestieGamepad/` is a separate addon that depends on Questie and changes nothing inside it, so it survives
+Questie updates.
+
+```sh
+make install
+```
+
+symlinks it into the default macOS AddOns folder (`make install WOW_ADDONS=<AddOnsDir>` for another location), so
+edits in this repo apply on `/reload`. Restart the client after the first install. `make uninstall` removes the
+link; `make check` syntax-checks the Lua. If Questie still carries the patch
+below, the addon stays idle; revert the patch first.
+
+## Apply as a patch to Questie (older form)
 
 ```sh
 scripts/apply.sh "/Applications/World of Warcraft/_forever_/Interface/AddOns/Questie"
 ```
 
 then `/reload` in game. Revert with `scripts/apply.sh "<QuestieDir>" -R`. Re-apply after every Questie update.
+Use one form or the other, not both.
 
 ## Controls while the tracker is focused
 

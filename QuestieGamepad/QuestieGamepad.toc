@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Questie Gamepad
+## Notes: Makes the "Access Quest Tracker" controller shortcut (LB + RB + D-pad Up) focus the Questie tracker under Blizzard's native gamepad UI. D-pad moves, A focuses a quest or folds a zone, X folds a quest, Y untracks, D-pad Right uses the quest item, B leaves.
+## Author: Brian M. Carr
+## Version: 1.0.0
+## Dependencies: Questie
+
+QuestieGamepad.lua
