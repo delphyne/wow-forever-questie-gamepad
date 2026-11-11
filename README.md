@@ -1,35 +1,27 @@
-# questie-gamepad-patch
+# QuestieGamepad
 
-Makes WoW: Forever's "Access Quest Tracker" controller shortcut (LB + RB + D-pad Up) work with the
-[Questie](https://github.com/Questie/Questie) tracker under Blizzard's native gamepad UI.
+A World of Warcraft: Forever addon that makes the "Access Quest Tracker" controller shortcut
+(LB + RB + D-pad Up) work with the [Questie](https://github.com/Questie/Questie) tracker under Blizzard's
+native gamepad UI.
 
 Blizzard's shortcut only focuses its own `ObjectiveTrackerFrame`, which Questie hides, so with Questie
-installed it did nothing. The patch adds a `TrackerGamepad` module that takes over the d-pad and face
-buttons while the Questie tracker is focused, without handing Questie's frames to Blizzard's
-SmartNavigation (which would taint the gamepad UI and trigger blocked-action popups).
+installed it does nothing. QuestieGamepad takes over the d-pad and face buttons while the Questie tracker is
+focused, without handing Questie's frames to Blizzard's SmartNavigation (which would taint the gamepad UI and
+trigger blocked-action popups).
 
-## Install (standalone addon, preferred)
+It is a separate addon that depends on Questie and changes nothing inside it, so it survives Questie updates.
 
-`QuestieGamepad/` is a separate addon that depends on Questie and changes nothing inside it, so it survives
-Questie updates.
+## Install
 
-```sh
-make install
+Copy or symlink the `QuestieGamepad` folder into the Forever AddOns directory:
+
+```
+World of Warcraft/_forever_/Interface/AddOns/QuestieGamepad
 ```
 
-symlinks it into the default macOS AddOns folder (`make install WOW_ADDONS=<AddOnsDir>` for another location), so
-edits in this repo apply on `/reload`. Restart the client after the first install. `make uninstall` removes the
-link; `make check` syntax-checks the Lua. If Questie still carries the patch
-below, the addon stays idle; revert the patch first.
-
-## Apply as a patch to Questie (older form)
-
-```sh
-scripts/apply.sh "/Applications/World of Warcraft/_forever_/Interface/AddOns/Questie"
-```
-
-then `/reload` in game. Revert with `scripts/apply.sh "<QuestieDir>" -R`. Re-apply after every Questie update.
-Use one form or the other, not both.
+On macOS with the game in the default location, `make install` creates the symlink for you
+(`make install WOW_ADDONS=<AddOnsDir>` for another location). `make uninstall` removes it. Restart the client
+after the first install, then make sure "Questie Gamepad" is enabled in the addon list.
 
 ## Controls while the tracker is focused
 
@@ -45,4 +37,4 @@ Use one form or the other, not both.
 Focus is also released when combat starts, when a Blizzard window takes controller focus, or when another
 addon's controller navigation (e.g. BaganatorGamepad with bags open) owns the keys.
 
-See `CLAUDE.md` for how it works and how to update it for new Questie versions.
+See `CLAUDE.md` for how it works and what to re-check after Questie or client updates.
