@@ -34,6 +34,9 @@ after the first install, then make sure "Questie Gamepad" is enabled in the addo
 | D-pad Right | Use the quest item |
 | B / Circle | Leave the tracker |
 
+When there is no Questie tracker to focus (disabled, hidden, minimized or empty), the shortcut opens the quest
+log on the world map instead (out of combat only).
+
 Focus is also released when combat starts, when a Blizzard window takes controller focus, or when another
 addon's controller navigation (e.g. BaganatorGamepad with bags open) owns the keys.
 

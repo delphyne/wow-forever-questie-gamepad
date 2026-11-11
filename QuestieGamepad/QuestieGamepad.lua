@@ -74,7 +74,7 @@ local NAVIGABLE_MODES = { zone = true, quest = true, achieve = true }
 
 local UPDATE_INTERVAL = 0.05
 
-local bindingOwner, highlight, footer, updateFrame, eventFrame
+local bindingOwner, fallbackOwner, highlight, footer, updateFrame, eventFrame
 local navButtons = {}
 local noopButton
 local active = false
@@ -89,6 +89,12 @@ local boundItemButton
 local elapsedSinceUpdate = 0
 local reassertPending = false
 local shortcutHooked = false
+---@type Frame? Blizzard's shortcuts action bar, shown while LB + RB are held
+local shortcutBar
+---The shortcut key opens the quest log instead, because there is no tracker to navigate
+local fallbackArmed = false
+local fallbackKeys = {}
+local fallbackReassertPending = false
 ---Set by a tracker redraw, which reuses the lines and resets the hover highlight
 local redrawn = false
 
@@ -478,6 +484,51 @@ function TrackerGamepad.IsActive()
     return active
 end
 
+---@return boolean
+local function _HasNavigableLines()
+    return QuestieTracker.started == true and Questie.db.profile.trackerEnabled and #_GetLines() > 0
+end
+
+local function _DisarmFallback()
+    if not fallbackArmed or InCombatLockdown() then
+        return
+    end
+    fallbackArmed = false
+    ClearOverrideBindings(fallbackOwner)
+end
+
+---With no Questie tracker to navigate (disabled, hidden, minimized or empty) the shortcut opens the quest log on the
+---world map instead. Opening it from this addon's code would taint the gamepad UI, like handing it the tracker
+---would. So the key itself is bound to Blizzard's own TOGGLEQUESTLOG binding, which the client runs untainted, for
+---as long as the shortcuts bar is up. The shortcut button's own handler does nothing in this state anyway.
+local function _ArmFallback()
+    if fallbackArmed or active or InCombatLockdown() or not _IsGamepadUIEnabled() then
+        return
+    end
+    if not (shortcutBar and shortcutBar:IsShown()) then
+        return
+    end
+    if (ObjectiveTrackerFrame and ObjectiveTrackerFrame:IsShown()) or _IsBlizzardUIFocused() or _HasNavigableLines() then
+        return
+    end
+
+    -- The quest tracker shortcut is action button 2 of the gamepad bar (d-pad up, see Blizzard's Bindings.xml)
+    local keys = { GetBindingKey("GAMEPADACTIONBUTTON2") }
+    if #keys == 0 then
+        keys[1] = KEYS.up
+    end
+    fallbackArmed = true
+    wipe(fallbackKeys)
+    for _, key in ipairs(keys) do
+        fallbackKeys[key] = true
+        SetOverrideBinding(fallbackOwner, true, key, "TOGGLEQUESTLOG")
+        -- LB and RB are held and count as SHIFT and CTRL; the exact combination wins over the bare key
+        if not key:find("-", 1, true) then
+            SetOverrideBinding(fallbackOwner, true, "CTRL-SHIFT-" .. key, "TOGGLEQUESTLOG")
+        end
+    end
+end
+
 ---Post-hook of Blizzard's "Access Quest Tracker" shortcut button (LB + RB + Up).
 local function _OnShortcutClick(_, _, down)
     if not down then
@@ -501,6 +552,11 @@ local function _HookShortcutBar()
         return false
     end
     shortcutHooked = true
+    shortcutBar = bar
+
+    -- The bar is shown exactly while LB + RB are held
+    bar:HookScript("OnShow", _ArmFallback)
+    bar:HookScript("OnHide", _DisarmFallback)
 
     local function hookButton()
         -- dpadTopButton follows the action, so it is still the quest tracker button when d-pad and face buttons are swapped
@@ -520,6 +576,16 @@ end
 ---frame, unless a Blizzard frame got the focus in the meantime. Blizzard always binds with UIParent as owner;
 ---another owner is another addon's controller navigation (e.g. an open bag window), which keeps the keys.
 local function _OnForeignBinding(owner, _, key)
+    if fallbackArmed and owner == UIParent and fallbackKeys[key] and not fallbackReassertPending then
+        -- Blizzard took the shortcut key back while the bar is still up
+        fallbackReassertPending = true
+        C_Timer.After(0, function()
+            fallbackReassertPending = false
+            _DisarmFallback()
+            _ArmFallback()
+        end)
+        return
+    end
     if not (active and owner ~= bindingOwner and OUR_KEYS[key]) then
         return
     end
@@ -547,6 +613,7 @@ do
     -- Everything is created with UIParent as parent: SmartNavigation hooks CreateFrame and rebuilds the button groups
     -- of the open Blizzard panel a new frame is created in, from the creating addon's (tainted) code.
     bindingOwner = CreateFrame("Frame", "QuestieGamepad_Bindings", UIParent)
+    fallbackOwner = CreateFrame("Frame", "QuestieGamepad_FallbackBindings", UIParent)
 
     highlight = CreateFrame("Frame", "QuestieGamepad_Highlight", UIParent, BackdropTemplateMixin and "BackdropTemplate")
     highlight:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 2 })
@@ -586,6 +653,7 @@ do
         if event == "PLAYER_REGEN_DISABLED" then
             -- Last moment the bindings can still be changed; hand the keys back for combat
             TrackerGamepad.Deactivate()
+            _DisarmFallback()
         else
             _HookShortcutBar()
         end

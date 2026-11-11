@@ -97,6 +97,24 @@ BaganatorGamepad — it keeps the keys). Blizzard rebinding one of our keys (own
 Controls: Up/Down move; A focus/unfocus quest or collapse/expand zone (falls back to collapse/expand quest when the
 focus button is hidden); X collapse/expand quest; Y untrack; Right use quest item; B leave; LB+RB+Up again = first entry.
 
+Quest log fallback (no tracker to navigate: Questie tracker disabled, hidden, minimized or empty):
+
+- The shortcut button's handler does nothing in that state, and the addon must not call `ToggleQuestLog()` /
+  `ToggleWorldMap()` itself (taint, see above). Instead it hooks the shortcuts bar's `OnShow`/`OnHide` (the bar
+  is shown exactly while LB + RB are held, `StaticOverrideActionBarMixin:ActivateOverrideBar`) and, while the bar
+  is up and there is nothing to navigate, binds the shortcut key to Blizzard's `TOGGLEQUESTLOG` binding with
+  `SetOverrideBinding(fallbackOwner, true, key, "TOGGLEQUESTLOG")`. The client runs binding commands untainted.
+  On Forever `ToggleQuestLog` opens `QuestMapFrame` on the world map (`Blizzard_UIPanels_Game/Mainline/QuestMapFrame.lua`
+  with Camelot overrides; binding defined in `Blizzard_FrameXML/Bindings_Camelot.xml`).
+- The key comes from `GetBindingKey("GAMEPADACTIONBUTTON2")` (falls back to `PADDUP`): gamepad keys run the
+  `GAMEPADACTIONBUTTON<n>` bindings in `Blizzard_GamepadActionBars/Bindings.xml`, which press button n of the
+  active bar; 2 is d-pad up, and the shortcuts bar has no d-pad/face swap cvar. `CTRL-SHIFT-<key>` is bound too.
+- Not armed in combat (bindings are locked) or while the navigation is active; disarmed on bar hide and on
+  `PLAYER_REGEN_DISABLED`; re-armed next frame if Blizzard (owner `UIParent`) rebinds the key while the bar is up.
+- Known gap: the Blizzard button's handler also calls `GamepadTargetLogic:ConsumeModifier()`, which the fallback
+  skips (calling it from addon code would taint `wasModifierUsed`). If releasing LB/RB after the fallback
+  tab-targets something, that is why (`Blizzard_GamepadTargeting/TargetLogic.lua`, `EndTargeting`).
+
 ## After a Questie update
 
 Nothing needs re-applying. If something breaks, re-check the Questie APIs the addon touches, from inside the
@@ -127,6 +145,8 @@ Bump `## Interface:` in the TOC when the client's interface number changes.
   the first zone header, the other entries dim, a prompt footer shows under (or above) the tracker.
 - Move, press A on a quest title (focus toggles, map icons fade), X (collapses), Y on a throwaway quest (untracks,
   highlight moves to the next entry), Right on a quest with an item, B (everything restored, d-pad back to normal).
+- Quest log fallback: minimize or hide the Questie tracker (or untrack everything), press LB+RB+Up: the world map
+  opens with the quest log. Releasing LB/RB must not change target. In combat nothing happens.
 - Taint check: `/console taintLog 2` before reproducing, then look for `QuestieGamepad` or `Questie` lines in `Logs/taint.log`
   (client folder). Any "blocked from an action only available to the Blizzard UI" popup is a failure.
 - Also check: open the world map with the controller while the tracker is focused (focus must drop cleanly),
