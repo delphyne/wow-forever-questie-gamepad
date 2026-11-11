@@ -231,11 +231,22 @@ local function _UpdateFooter()
     footer.text:SetText(_BuildPrompts(selectedLine))
     footer:SetWidth(footer.text:GetStringWidth() + 12)
     footer:ClearAllPoints()
+    -- The prompts are usually wider than the tracker, which usually sits at the right edge of the screen: line the
+    -- footer up with the tracker's left edge when it fits on screen from there, with its right edge otherwise.
+    -- Both frames can be scaled differently, so compare in screen pixels.
+    local side = "LEFT"
+    local baseLeft = baseFrame:GetLeft()
+    if baseLeft then
+        local footerRight = baseLeft * baseFrame:GetEffectiveScale() + footer:GetWidth() * footer:GetEffectiveScale()
+        if footerRight > UIParent:GetRight() * UIParent:GetEffectiveScale() then
+            side = "RIGHT"
+        end
+    end
     -- Below the tracker unless the tracker sits at the bottom of the screen
     if (baseFrame:GetBottom() or 0) > footer:GetHeight() + 4 then
-        footer:SetPoint("TOPLEFT", baseFrame, "BOTTOMLEFT", 0, -2)
+        footer:SetPoint("TOP" .. side, baseFrame, "BOTTOM" .. side, 0, -2)
     else
-        footer:SetPoint("BOTTOMLEFT", baseFrame, "TOPLEFT", 0, 2)
+        footer:SetPoint("BOTTOM" .. side, baseFrame, "TOP" .. side, 0, 2)
     end
     footer:Show()
 end
