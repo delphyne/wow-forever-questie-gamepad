@@ -14,9 +14,11 @@ It began as a patch to Questie's own files (first commit in the git history); th
 
 - `QuestieGamepad/QuestieGamepad.toc` — Interface 16001, `## Dependencies: Questie`.
 - `QuestieGamepad/QuestieGamepad.lua` — all the logic.
-- `Makefile` — `make install` symlinks `QuestieGamepad/` into
-  `/Applications/World of Warcraft/_forever_/Interface/AddOns` (override with `WOW_ADDONS=`), so edits apply on
-  `/reload`; `make uninstall` removes the link; `make check` syntax-checks the Lua with `luajit` (Homebrew).
+- `Makefile` — `make install` symlinks `QuestieGamepad/` into the AddOns folder found by `find-wow-addons.sh`
+  (macOS `/Applications`; on Linux Steam/Proton compatdata incl. Flatpak Steam and SD cards, Faugus, Lutris, Heroic,
+  Bottles, `~/.wine`; first match wins, others listed on stderr), so edits apply on `/reload`. Override with
+  `WOW_ADDONS=`; `make where` prints the folder; `make uninstall` removes the link; `make check` syntax-checks the
+  Lua with `luajit`. Both `make` and `luajit` come from Homebrew (macOS and the Steam Deck, whose root is read-only).
 
 ## How the addon attaches to Questie
 
