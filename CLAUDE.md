@@ -157,5 +157,5 @@ Bump `## Interface:` in the TOC when the client's interface number changes.
 ## Related local addons
 
 `/Applications/World of Warcraft/_forever_/Interface/AddOns/BaganatorGamepad/BaganatorGamepad.lua` is the model this
-follows (override bindings + own highlight, re-assert on foreign rebinding). Do not use the `Baganator` addon's own
-source as reference; its AGENTS.md forbids it.
+follows (override bindings + own highlight, re-assert on foreign rebinding). The `Baganator` addon's own source may
+be read to understand its behaviour (its AGENTS.md says not to; the owner has waived that), but nothing is copied from it.
